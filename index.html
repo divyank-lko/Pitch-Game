@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>PITCH — Daily Cricket Puzzle</title>
+<meta name="description" content="Guess today's cricketer from 4 clues. India's daily cricket puzzle. हिंदी और English में।">
+<script>
+  const SUPABASE_URL='YOUR_SUPABASE_URL';
+  const SUPABASE_KEY='YOUR_SUPABASE_ANON_KEY';
+  const SUPABASE_ON=SUPABASE_URL!=='YOUR_SUPABASE_URL';
+</script>
+<!-- AdSense: uncomment after approval
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--pitch:#0A1F0E;--surface:#122B17;--card:#193520;--border:#2A4D30;--gold:#D4A843;--gold2:#8B6A1F;--red:#C41E3A;--red2:#7A1224;--cream:#F5F0E8;--muted:#7A9E82;--ok:#2E7D32;--font-d:'Teko',sans-serif;--font-m:'DM Mono',monospace;--font-b:'Hind',sans-serif;--r:4px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{overflow-x:hidden}
+body{background:var(--pitch);color:var(--cream);font-family:var(--font-b);min-height:100dvh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(42,77,48,.14) 60px,rgba(42,77,48,.14) 62px);}
+body::after{content:'';position:fixed;top:0;left:0;right:0;height:3px;z-index:10;background:linear-gradient(90deg,transparent,var(--gold),var(--red),var(--gold),transparent);}
+.wrap{position:relative;z-index:1;width:100%;max-width:480px;padding:0 16px 80px;display:flex;flex-direction:column;align-items:center;}
+.screen{display:none;width:100%;flex-direction:column;align-items:center;padding-top:24px;}
+.screen.active{display:flex;animation:riseIn .35s ease both;}
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* LANGUAGE SCREEN */
+.lang-screen{min-height:100dvh;justify-content:center;gap:20px;}
+.lang-logo-ball{width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#E63950,var(--red) 60%,#8B0000);box-shadow:0 0 50px rgba(196,30,58,.5);margin-bottom:8px;animation:spinBall 8s linear infinite;}
+@keyframes spinBall{to{transform:rotate(360deg)}}
+.lang-title{font-family:var(--font-d);font-size:72px;letter-spacing:12px;line-height:1;}
+.lang-sub{font-family:var(--font-m);font-size:12px;letter-spacing:3px;color:var(--muted);margin-bottom:32px;text-align:center;}
+.lang-choose{font-family:var(--font-m);font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;}
+.lang-btns{display:flex;gap:12px;width:100%;}
+.lang-btn{flex:1;padding:20px 16px;border:2px solid var(--border);border-radius:var(--r);background:var(--card);cursor:pointer;transition:all .2s;text-align:center;}
+.lang-btn:hover{border-color:var(--gold);background:var(--surface);}
+.lang-btn-primary{font-family:var(--font-d);font-size:28px;letter-spacing:2px;color:var(--cream);display:block;margin-bottom:4px;}
+.lang-btn-sub{font-family:var(--font-m);font-size:11px;color:var(--muted);letter-spacing:2px;}
+
+/* LANG TOGGLE button (top right all screens) */
+.lang-toggle{position:fixed;top:12px;right:12px;z-index:100;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:var(--font-m);font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.lang-toggle:hover{border-color:var(--gold);color:var(--gold);}
+
+/* LOGO */
+.logo-ball{width:56px;height:56px;border-radius:50%;margin:0 auto 8px;background:radial-gradient(circle at 35% 35%,#E63950,var(--red) 60%,#8B0000);box-shadow:0 0 40px rgba(196,30,58,.4);position:relative;animation:spinBall 8s linear infinite;}
+.logo-ball::before,.logo-ball::after{content:'';position:absolute;border:2px solid rgba(255,200,200,.4);border-radius:50%;}
+.logo-ball::before{width:60%;height:100%;left:20%;top:0;transform:rotate(15deg);}
+.logo-ball::after{width:100%;height:60%;left:0;top:20%;transform:rotate(-15deg);}
+.logo-title{font-family:var(--font-d);font-size:clamp(52px,15vw,76px);font-weight:700;letter-spacing:10px;line-height:1;text-shadow:0 0 60px rgba(212,168,67,.3);}
+#logoSub{font-family:var(--font-m);font-size:11px;letter-spacing:3px;color:var(--muted);margin-top:4px;margin-bottom:14px;}
+
+/* TABS */
+.tab-row{display:flex;width:100%;gap:6px;margin-bottom:12px;}
+.tab-btn{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px;font-family:var(--font-d);font-size:14px;letter-spacing:2px;color:var(--muted);cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.tab-btn.active{background:var(--card);border-color:var(--gold);color:var(--gold);}
+.tab-btn:hover:not(.active){color:var(--cream);}
+
+/* STREAK HERO */
+.streak-hero{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;transition:background .4s,border-color .4s;}
+.streak-count{font-family:var(--font-d);font-size:44px;line-height:1;color:var(--gold);}
+.streak-lw{display:flex;align-items:center;gap:6px;margin-top:2px;}
+.streak-icon{font-size:16px;}
+.streak-label{font-family:var(--font-d);font-size:18px;letter-spacing:2px;}
+.streak-cap{font-family:var(--font-m);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+.h-sv{font-family:var(--font-d);font-size:28px;color:var(--cream);}
+.h-sl{font-family:var(--font-m);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.mini-stats{display:flex;gap:8px;width:100%;margin-bottom:12px;}
+.ms{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center;}
+.ms-val{font-family:var(--font-d);font-size:24px;color:var(--gold);}
+.ms-lbl{font-family:var(--font-m);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+
+/* HOW TO PLAY */
+.how-box{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;}
+.how-box h3{font-family:var(--font-d);font-size:15px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:9px;}
+.how-row{display:flex;align-items:flex-start;gap:9px;margin-bottom:6px;font-size:13px;line-height:1.5;}
+.how-icon{font-size:14px;flex-shrink:0;margin-top:2px;}
+
+/* CHALLENGE BANNER */
+.challenge-banner{width:100%;background:linear-gradient(135deg,#2A1A0E,#3D2A0A);border:1px solid var(--gold2);border-radius:var(--r);padding:13px 15px;margin-bottom:11px;display:none;}
+.challenge-banner.show{display:block;animation:riseIn .4s ease;}
+.cb-title{font-family:var(--font-d);font-size:17px;letter-spacing:3px;color:var(--gold);margin-bottom:3px;}
+.cb-body{font-size:13px;color:var(--cream);line-height:1.5;}
+.cb-stats{font-family:var(--font-m);font-size:12px;color:var(--gold);margin-top:5px;}
+
+/* BUTTONS */
+.play-btn{width:100%;background:var(--red);color:#fff;border:none;font-family:var(--font-d);font-size:22px;font-weight:600;letter-spacing:4px;border-radius:var(--r);padding:15px;cursor:pointer;box-shadow:0 0 40px rgba(196,30,58,.35);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:9px;}
+.play-btn:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(196,30,58,.55);}
+.play-btn:active{transform:scale(.97);}
+
+/* LEADERBOARD */
+.lb-section{width:100%;margin-top:12px;}
+.lb-title{font-family:var(--font-d);font-size:16px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:7px;}
+.lb-box{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.lb-row{display:flex;align-items:center;gap:8px;padding:8px 13px;border-bottom:1px solid var(--border);}
+.lb-row:last-child{border-bottom:none;}
+.lb-rank{font-family:var(--font-d);font-size:17px;color:var(--muted);width:20px;text-align:center;}
+.lb-rank.g{color:var(--gold);}.lb-rank.s{color:#C0C0C0;}.lb-rank.b{color:#CD7F32;}
+.lb-name{flex:1;font-size:13px;font-weight:600;}
+.lb-score{font-family:var(--font-m);font-size:11px;color:var(--gold);}
+.lb-empty{padding:16px;text-align:center;font-family:var(--font-m);font-size:11px;color:var(--muted);letter-spacing:2px;}
+
+/* PRACTICE */
+.practice-list{width:100%;}
+.pi{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:7px;cursor:pointer;transition:border-color .2s;}
+.pi:hover{border-color:var(--gold);}
+.pi-num{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:2px;}
+.pi-name{font-family:var(--font-d);font-size:20px;letter-spacing:2px;color:var(--cream);}
+.pi-done{font-size:18px;}
+.pi-score{font-family:var(--font-m);font-size:11px;color:var(--gold);}
+
+/* AD SLOT */
+.ad-slot{width:100%;min-height:90px;margin:14px 0;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--font-m);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
+
+/* GAME */
+.game-topbar{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.g-meta{font-family:var(--font-m);font-size:11px;color:var(--muted);letter-spacing:2px;}
+.g-meta span{color:var(--gold);}
+.timer-disp{font-family:var(--font-d);font-size:24px;letter-spacing:2px;color:var(--cream);display:flex;align-items:center;gap:4px;}
+.attempts-row{display:flex;gap:5px;}
+.a-dot{width:22px;height:6px;border-radius:2px;background:var(--border);transition:background .3s;}
+.a-dot.used{background:var(--red2);}.a-dot.active{background:var(--gold);box-shadow:0 0 7px var(--gold2);}.a-dot.won{background:var(--ok);}
+.chal-bar{width:100%;background:linear-gradient(90deg,#2A1A0E,#3D2A0A);border:1px solid var(--gold2);border-radius:var(--r);padding:7px 13px;margin-bottom:10px;font-family:var(--font-m);font-size:10px;color:var(--gold);letter-spacing:2px;text-align:center;display:none;}
+.chal-bar.show{display:block;}
+.clues-stack{width:100%;margin-bottom:10px;}
+.clue-card{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:7px;overflow:hidden;opacity:0;transform:translateY(-8px);transition:opacity .4s,transform .4s;}
+.clue-card.revealed{opacity:1;transform:none;animation:cardReveal .4s ease both;}
+@keyframes cardReveal{0%{opacity:0;transform:translateY(-10px) scale(.97);}60%{transform:translateY(2px) scale(1.01);}100%{opacity:1;transform:none;}}
+.clue-head{display:flex;align-items:center;gap:8px;padding:7px 13px;background:var(--surface);border-bottom:1px solid var(--border);}
+.clue-num{font-family:var(--font-d);font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
+.clue-type{font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:auto;}
+.clue-body{padding:11px 14px;}
+.clue-value{font-family:var(--font-d);font-size:22px;font-weight:600;color:var(--cream);letter-spacing:1px;line-height:1.2;}
+.clue-value.mono{font-family:var(--font-m);font-size:17px;}
+.prev-guesses{width:100%;margin-bottom:9px;}
+.prev-guess{display:flex;align-items:center;gap:8px;padding:6px 11px;margin-bottom:5px;background:rgba(196,30,58,.1);border:1px solid var(--red2);border-radius:var(--r);font-family:var(--font-m);font-size:12px;color:var(--red);animation:slideIn .3s ease both;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-5px)}}
+.prev-guess::before{content:'✕';font-size:10px;}
+.guess-section{width:100%;position:relative;margin-bottom:7px;}
+.guess-input-wrap{position:relative;width:100%;}
+.guess-input{width:100%;background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:11px 48px 11px 14px;font-family:var(--font-b);font-size:16px;color:var(--cream);outline:none;transition:border-color .2s;caret-color:var(--gold);}
+.guess-input::placeholder{color:var(--muted);}
+.guess-input:focus{border-color:var(--gold);}
+.guess-submit{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--red);border:none;border-radius:3px;width:34px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-size:17px;}
+.guess-submit:hover{background:#E0243F;}
+.autocomplete-drop{position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);max-height:150px;overflow-y:auto;display:none;}
+.autocomplete-drop.open{display:block;}
+.ac-item{padding:9px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--cream);display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.hi{background:var(--surface);color:var(--gold);}
+.next-clue-btn{width:100%;background:transparent;border:1px solid var(--border);border-radius:var(--r);padding:9px;font-family:var(--font-m);font-size:10px;letter-spacing:3px;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:all .2s;margin-bottom:7px;}
+.next-clue-btn:hover:not(:disabled){border-color:var(--muted);color:var(--cream);}
+.next-clue-btn:disabled{opacity:.3;cursor:default;}
+.midgame-share{width:100%;display:none;background:transparent;border:1px dashed var(--border);border-radius:var(--r);padding:8px;font-family:var(--font-m);font-size:10px;letter-spacing:2px;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:all .2s;margin-bottom:7px;text-align:center;}
+.midgame-share.visible{display:block;}
+.midgame-share:hover{border-color:#25D366;color:#25D366;}
+
+/* RESULT */
+.milestone-banner{width:100%;border-radius:var(--r);padding:13px 15px;margin-bottom:12px;text-align:center;display:none;}
+.milestone-banner.show{display:block;animation:bannerIn .6s ease both;}
+@keyframes bannerIn{0%{opacity:0;transform:scale(.85);}60%{transform:scale(1.04);}100%{opacity:1;transform:none;}}
+.mb-icon{font-size:26px;margin-bottom:2px;}
+.mb-streak{font-family:var(--font-d);font-size:42px;letter-spacing:2px;line-height:1;}
+.mb-label{font-family:var(--font-d);font-size:22px;letter-spacing:4px;}
+.mb-cap{font-family:var(--font-m);font-size:10px;letter-spacing:2px;color:var(--muted);margin-top:3px;}
+.chal-result{width:100%;background:linear-gradient(135deg,#1A2E0A,#2A3D10);border:1px solid var(--gold2);border-radius:var(--r);padding:14px;margin-bottom:12px;display:none;}
+.chal-result.show{display:block;animation:riseIn .4s ease;}
+.cr-title{font-family:var(--font-d);font-size:17px;letter-spacing:3px;color:var(--gold);margin-bottom:9px;}
+.cr-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.cr-player{text-align:center;flex:1;}
+.cr-name{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:1px;}
+.cr-score{font-family:var(--font-d);font-size:30px;color:var(--cream);}
+.cr-time{font-family:var(--font-m);font-size:11px;color:var(--muted);}
+.cr-vs{font-family:var(--font-d);font-size:22px;color:var(--muted);padding:0 8px;}
+.cr-winner{font-family:var(--font-d);font-size:15px;letter-spacing:3px;text-align:center;margin-top:7px;color:var(--gold);}
+.result-outcome{font-family:var(--font-d);font-size:clamp(28px,7vw,42px);letter-spacing:4px;margin-bottom:4px;text-align:center;}
+.result-outcome.won{color:var(--gold);text-shadow:0 0 40px rgba(212,168,67,.4);}
+.result-outcome.lost{color:var(--muted);}
+.result-player-name{font-family:var(--font-d);font-size:clamp(32px,9vw,52px);font-weight:700;line-height:1;margin-bottom:4px;text-align:center;}
+.result-player-name .first{color:var(--muted);}
+.result-sub{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;text-align:center;}
+.r-score-row{display:flex;gap:7px;margin-bottom:12px;width:100%;}
+.rsc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 8px;text-align:center;}
+.rsc-val{font-family:var(--font-d);font-size:26px;color:var(--gold);}
+.rsc-lbl{font-family:var(--font-m);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+.player-card{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.pc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+.pc-flag{font-size:22px;}
+.pc-name{font-family:var(--font-d);font-size:21px;letter-spacing:2px;color:var(--cream);}
+.pc-role{font-family:var(--font-m);font-size:10px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;}
+.pc-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.pc-sl{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;}
+.pc-sv{font-family:var(--font-d);font-size:19px;color:var(--cream);}
+.dyk-box{width:100%;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
+.dyk-lbl{font-family:var(--font-m);font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:5px;}
+.dyk-text{font-size:13px;line-height:1.7;color:var(--cream);}
+.dyk-more{margin-top:7px;cursor:pointer;font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.dyk-more:hover{color:var(--gold);}
+.dyk-extra{display:none;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);font-size:12px;line-height:1.7;color:var(--muted);}
+.dyk-extra.open{display:block;animation:riseIn .3s ease;}
+.mq-box{width:100%;margin-bottom:10px;}
+.mq-title{font-family:var(--font-d);font-size:16px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+.mq-prog{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:2px;margin-left:auto;}
+.mq-q{font-size:14px;font-weight:600;color:var(--cream);margin-bottom:9px;line-height:1.5;}
+.mq-opts{display:flex;flex-direction:column;gap:6px;}
+.mq-opt{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 13px;font-size:13px;font-weight:500;color:var(--cream);cursor:pointer;transition:all .15s;text-align:left;}
+.mq-opt:hover:not(:disabled){border-color:var(--gold);background:rgba(212,168,67,.08);}
+.mq-opt:disabled{cursor:default;}
+.mq-opt.correct{border-color:var(--ok);background:rgba(46,125,50,.2);color:#81C784;}
+.mq-opt.wrong{border-color:var(--red);background:rgba(196,30,58,.15);color:#EF9A9A;}
+.mq-fb{font-family:var(--font-m);font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;padding:7px 11px;background:var(--surface);border-radius:var(--r);display:none;}
+.mq-next{width:100%;background:transparent;border:1px solid var(--border);border-radius:var(--r);padding:9px;font-family:var(--font-m);font-size:10px;letter-spacing:3px;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:all .2s;margin-top:7px;display:none;}
+.mq-next:hover{border-color:var(--gold);color:var(--gold);}
+.mq-final{font-family:var(--font-d);font-size:24px;color:var(--gold);text-align:center;padding:9px;display:none;}
+
+/* TOMORROW TEASER */
+.tomorrow-teaser{display:none;width:100%;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
+.tt-label{font-family:var(--font-m);font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:5px;}
+.tt-body{font-size:14px;color:var(--cream);}
+
+/* SHARE */
+.share-card{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;font-family:var(--font-m);line-height:1.8;}
+.sc-title{font-family:var(--font-d);font-size:16px;letter-spacing:3px;color:var(--gold);margin-bottom:5px;}
+.sc-grid{font-size:19px;letter-spacing:3px;margin-bottom:5px;}
+.sc-text{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.share-wa{width:100%;background:#25D366;color:#fff;border:none;border-radius:var(--r);font-family:var(--font-d);font-size:18px;letter-spacing:3px;padding:12px;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .15s;}
+.share-wa:hover{transform:translateY(-2px);}
+.chal-btn{width:100%;background:linear-gradient(135deg,#3D2A0A,#5A3D0A);border:1px solid var(--gold2);color:var(--gold);font-family:var(--font-d);font-size:18px;letter-spacing:3px;border-radius:var(--r);padding:12px;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .2s;}
+.chal-btn:hover{border-color:var(--gold);}
+.copy-btn{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);color:var(--cream);font-family:var(--font-d);font-size:15px;letter-spacing:2px;padding:10px;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;}
+.copy-btn:hover{border-color:var(--gold);color:var(--gold);}
+.home-btn{width:100%;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-b);font-size:13px;font-weight:500;padding:9px;cursor:pointer;margin-bottom:6px;transition:all .15s;}
+.home-btn:hover{border-color:var(--muted);color:var(--cream);}
+.next-pitch{text-align:center;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px;}
+.np-label{font-family:var(--font-m);font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.np-time{font-family:var(--font-d);font-size:32px;letter-spacing:4px;color:var(--cream);}
+
+/* STATS */
+.stats-streak-hero{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px 20px;width:100%;max-width:340px;}
+.modal-title{font-family:var(--font-d);font-size:22px;letter-spacing:3px;color:var(--gold);margin-bottom:4px;}
+.modal-sub{font-family:var(--font-m);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:13px;line-height:1.6;white-space:pre-line;}
+.modal-input{width:100%;background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:10px 13px;font-family:var(--font-b);font-size:16px;color:var(--cream);outline:none;caret-color:var(--gold);margin-bottom:9px;}
+.modal-input:focus{border-color:var(--gold);}
+.modal-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-family:var(--font-d);font-size:17px;letter-spacing:3px;padding:12px;cursor:pointer;}
+.modal-btn:hover{opacity:.85;}
+
+/* UTILS */
+.toast{position:fixed;top:50px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;font-family:var(--font-m);font-size:11px;color:var(--cream);letter-spacing:1px;z-index:500;white-space:nowrap;pointer-events:none;animation:riseIn .3s ease;}
+.wrong-flash{position:fixed;inset:0;z-index:200;background:rgba(196,30,58,.07);pointer-events:none;animation:wf .45s ease forwards;}
+@keyframes wf{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+.cf{position:fixed;pointer-events:none;z-index:300;animation:cfFall linear forwards;border-radius:2px;}
+@keyframes cfFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:380px){.logo-title{font-size:48px}.clue-value{font-size:19px}.clue-value.mono{font-size:15px}}
+</style>
+</head>
+<body>
+<!-- Language toggle (shown on all screens except lang screen) -->
+<button class="lang-toggle" onclick="toggleLang()" id="langToggle" style="display:none">EN | हि</button>
+
+<div class="wrap">
+
+<!-- NICKNAME MODAL -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal-box">
+    <div class="modal-title" data-t="nickTitle">YOUR NAME</div>
+    <div class="modal-sub" data-t="nickSub">Shown on leaderboard.</div>
+    <input class="modal-input" id="nickInput" maxlength="16" data-tp="nickPlaceholder" autocomplete="off">
+    <button class="modal-btn" onclick="saveNick()" data-t="nickBtn">LET'S PLAY →</button>
+  </div>
+</div>
+
+<!-- LANGUAGE SCREEN -->
+<div class="screen lang-screen" id="langScreen">
+  <div class="lang-logo-ball"></div>
+  <div class="lang-title">PITCH</div>
+  <div class="lang-sub">India's Daily Cricket Puzzle<br>भारत का डेली क्रिकेट पहेली</div>
+  <div class="lang-choose">Choose Language / भाषा चुनें</div>
+  <div class="lang-btns">
+    <button class="lang-btn" onclick="chooseLang('en')">
+      <span class="lang-btn-primary">English</span>
+      <span class="lang-btn-sub">Continue in English</span>
+    </button>
+    <button class="lang-btn" onclick="chooseLang('hi')">
+      <span class="lang-btn-primary">हिंदी</span>
+      <span class="lang-btn-sub">हिंदी में खेलें</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div class="screen" id="homeScreen">
+  <div class="logo-ball"></div>
+  <div class="logo-title">PITCH</div>
+  <div id="logoSub">Daily Cricket Puzzle · India</div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('today')" id="tab-today" data-t="tabToday">TODAY</button>
+    <button class="tab-btn" onclick="switchTab('practice')" id="tab-practice" data-t="tabPractice">PRACTICE</button>
+    <button class="tab-btn" onclick="switchTab('stats')" id="tab-stats" data-t="tabStats">STATS</button>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div id="tab-today-content" style="width:100%">
+    <div class="challenge-banner" id="homeChalBanner"></div>
+    <div class="streak-hero" id="homeStreakCard">
+      <div>
+        <div class="streak-count" id="homeStreakNum">0</div>
+        <div class="streak-lw">
+          <span class="streak-icon" id="homeStreakIcon">🎯</span>
+          <span class="streak-label" id="homeStreakLabel">Newcomer</span>
+        </div>
+        <div class="streak-cap" data-t="streakCap">Day Streak</div>
+      </div>
+      <div class="streak-right">
+        <div class="h-sv" id="homeWinPct">—</div>
+        <div class="h-sl" data-t="winPct">Win %</div>
+      </div>
+    </div>
+    <div class="mini-stats">
+      <div class="ms"><div class="ms-val" id="homePlayed">0</div><div class="ms-lbl" data-t="played">Played</div></div>
+      <div class="ms"><div class="ms-val" id="homeWon">0</div><div class="ms-lbl" data-t="won">Won</div></div>
+      <div class="ms"><div class="ms-val" id="homeMax">0</div><div class="ms-lbl" data-t="best">Best 🔥</div></div>
+    </div>
+    <div class="how-box">
+      <h3 data-t="howTitle">How To Play</h3>
+      <div class="how-row"><span class="how-icon">🏏</span><span data-t="how1">Everyone gets the same cricketer today</span></div>
+      <div class="how-row"><span class="how-icon">📋</span><span data-t="how2">4 stat clues revealed one at a time</span></div>
+      <div class="how-row"><span class="how-icon">⏱</span><span data-t="how3">Timer runs — faster = more bragging rights</span></div>
+      <div class="how-row"><span class="how-icon">✋</span><span data-t="how4">Max 5 guesses · each wrong reveals next clue</span></div>
+      <div class="how-row"><span class="how-icon">🔥</span><span data-t="how5">Build your streak to unlock rank titles</span></div>
+      <div class="how-row"><span class="how-icon">⚔️</span><span data-t="how6">Challenge friends — see who's sharper</span></div>
+    </div>
+    <button class="play-btn" onclick="startGame('today')" data-t="playBtn">🏏 PLAY TODAY'S PITCH</button>
+    <div class="lb-section" id="homeLbSection" style="display:none">
+      <div class="lb-title" data-t="lbTitle">Today's Leaderboard</div>
+      <div class="lb-box" id="homeLbBox"><div class="lb-empty" data-t="lbLoading">Loading…</div></div>
+    </div>
+    <div class="ad-slot" data-t="adSlot">Advertisement</div>
+  </div>
+
+  <!-- PRACTICE TAB -->
+  <div id="tab-practice-content" style="width:100%;display:none">
+    <div class="how-box" style="margin-bottom:12px">
+      <h3 data-t="practiceTitle">Practice Mode</h3>
+      <div class="how-row"><span class="how-icon">🎯</span><span data-t="practiceHow1">Play past PITCH puzzles any time</span></div>
+      <div class="how-row"><span class="how-icon">📈</span><span data-t="practiceHow2">No streak impact — just sharpen up</span></div>
+      <div class="how-row"><span class="how-icon">🏆</span><span data-t="practiceHow3">Try to beat your best score</span></div>
+    </div>
+    <div class="practice-list" id="practiceList"></div>
+  </div>
+
+  <!-- STATS TAB -->
+  <div id="tab-stats-content" style="width:100%;display:none">
+    <div class="stats-streak-hero" id="statsStreakCard">
+      <div>
+        <div class="streak-count" id="statsStreakNum">0</div>
+        <div class="streak-lw">
+          <span class="streak-icon" id="statsStreakIcon">🎯</span>
+          <span class="streak-label" id="statsStreakLabel">Newcomer</span>
+        </div>
+        <div class="streak-cap" data-t="streakCap">Current Streak</div>
+      </div>
+      <div class="streak-right">
+        <div class="h-sv" id="statsMaxStreak">0</div>
+        <div class="h-sl" data-t="best">Best Ever</div>
+      </div>
+    </div>
+    <div id="statsDistGrid" style="width:100%"></div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+  <div class="game-topbar">
+    <div class="g-meta">PITCH <span id="gamePuzzleNum">#1</span></div>
+    <div class="timer-disp">⏱ <span id="timerNum">0:00</span></div>
+    <div class="attempts-row" id="attemptsRow"></div>
+  </div>
+  <div class="chal-bar" id="chalBar" data-t="chalBar">⚔️ CHALLENGE MODE</div>
+  <div class="clues-stack" id="cluesStack"></div>
+  <div class="prev-guesses" id="prevGuesses"></div>
+  <div class="guess-section">
+    <div class="guess-input-wrap">
+      <input type="text" class="guess-input" id="guessInput" data-tp="inputPlaceholder" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="guess-submit" onclick="submitGuess()">→</button>
+    </div>
+    <div class="autocomplete-drop" id="autocDrop"></div>
+  </div>
+  <button class="next-clue-btn" id="nextClueBtn" onclick="revealNextClue()">⬇ REVEAL NEXT CLUE</button>
+  <button class="midgame-share" id="midgameShare" onclick="shareMidGame()" data-t="midShare">📲 CHALLENGE A FRIEND</button>
+  <div class="ad-slot" id="adMid" style="display:none" data-t="adSlot">Advertisement</div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div class="screen" id="resultScreen">
+  <div class="milestone-banner" id="milestoneBanner">
+    <div class="mb-icon" id="mbIcon">🔥</div>
+    <div class="mb-streak" id="mbStreak">7</div>
+    <div class="mb-label" id="mbLabel">AWESOME</div>
+    <div class="mb-cap" id="mbCap">Keep going!</div>
+  </div>
+  <div class="chal-result" id="chalResult">
+    <div class="cr-title" data-t="chalBar">⚔️ CHALLENGE RESULT</div>
+    <div class="cr-row">
+      <div class="cr-player">
+        <div class="cr-name" id="crChallName">CHALLENGER</div>
+        <div class="cr-score" id="crChallScore">—</div>
+        <div class="cr-time" id="crChallTime">—</div>
+      </div>
+      <div class="cr-vs" data-t="chalVs">VS</div>
+      <div class="cr-player">
+        <div class="cr-name" data-t="chalYou">YOU</div>
+        <div class="cr-score" id="crYourScore">—</div>
+        <div class="cr-time" id="crYourTime">—</div>
+      </div>
+    </div>
+    <div class="cr-winner" id="crWinner"></div>
+  </div>
+  <div class="result-outcome" id="resultOutcome">CAUGHT IT!</div>
+  <div class="result-player-name" id="resultPlayerName"></div>
+  <div class="result-sub" id="resultSub"></div>
+  <div class="r-score-row">
+    <div class="rsc"><div class="rsc-val" id="rScore">0</div><div class="rsc-lbl" data-t="points">Points</div></div>
+    <div class="rsc"><div class="rsc-val" id="rClues">4</div><div class="rsc-lbl" data-t="clues">Clues</div></div>
+    <div class="rsc"><div class="rsc-val" id="rTime">—</div><div class="rsc-lbl" data-t="time">Time</div></div>
+    <div class="rsc"><div class="rsc-val" id="rStreak">0</div><div class="rsc-lbl" data-t="streak">Streak</div></div>
+  </div>
+  <div class="player-card" id="playerCard"></div>
+  <div class="dyk-box" id="dykBox">
+    <div class="dyk-lbl" data-t="dykLabel">💡 Did You Know?</div>
+    <div class="dyk-text" id="dykText"></div>
+    <div class="dyk-more" id="dykMore" onclick="toggleDyk()" data-t="dykMore">+ More Facts</div>
+    <div class="dyk-extra" id="dykExtra"></div>
+  </div>
+  <div class="mq-box" id="mqBox">
+    <div class="mq-title" data-t="quizTitle">🧠 QUIZ TIME <span class="mq-prog" id="mqProg">1/3</span></div>
+    <div class="mq-q" id="mqQ"></div>
+    <div class="mq-opts" id="mqOpts"></div>
+    <div class="mq-fb" id="mqFb"></div>
+    <button class="mq-next" id="mqNext">NEXT →</button>
+    <div class="mq-final" id="mqFinal"></div>
+  </div>
+  <div class="ad-slot" data-t="adSlot">Advertisement</div>
+  <div class="share-card">
+    <div class="sc-title">PITCH <span id="scNum">#1</span></div>
+    <div class="sc-grid" id="scGrid">⬛⬛⬛⬛⬛</div>
+    <div class="sc-text" id="scText"></div>
+  </div>
+  <button class="share-wa" onclick="shareWhatsApp()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    <span data-t="shareWA">SHARE ON WHATSAPP</span>
+  </button>
+  <button class="chal-btn" onclick="challengeFriend()">⚔️ <span data-t="challengeFriend">CHALLENGE A FRIEND</span></button>
+  <button class="copy-btn" onclick="copyResult()">📋 <span data-t="copyResult">COPY RESULT</span></button>
+  <button class="home-btn" onclick="goHome()" data-t="backHome">← Back to Home</button>
+  <div class="lb-section" id="resultLbSection" style="display:none">
+    <div class="lb-title" data-t="resultLbTitle">Today's Leaderboard</div>
+    <div class="lb-box" id="resultLbBox"></div>
+  </div>
+  <div class="lb-section" id="resultWeeklyLbSection" style="display:none">
+    <div class="lb-title" data-t="weeklyLbTitle">This Week's Leaderboard</div>
+    <div class="lb-box" id="resultWeeklyLbBox"></div>
+  </div>
+  <div id="tomorrowTeaser" class="tomorrow-teaser"></div>
+  <div class="next-pitch">
+    <div class="np-label" data-t="nextPuzzleLabel">Next Puzzle In</div>
+    <div class="np-time" id="npTime">00:00:00</div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- Load scripts in order -->
+<script src="lang.js"></script>
+<script src="names.js"></script>
+<script src="puzzles.js"></script>
+<script>
+// Language toggle helper (needs lang loaded first)
+function toggleLang(){
+  const newLang=window.PITCH_LANG==='hi'?'en':'hi';
+  setLang(newLang);
+  updateLangToggle();
+  // If on language screen, skip
+  if(document.getElementById('langScreen').classList.contains('active'))return;
+  updateAllText();
+  // Re-render clues if on game screen
+  if(document.getElementById('gameScreen').classList.contains('active')) renderClues();
+}
+function updateLangToggle(){
+  const btn=document.getElementById('langToggle');
+  if(!window.PITCH_LANG){btn.style.display='none';return;}
+  btn.style.display='block';
+  btn.textContent=window.PITCH_LANG==='hi'?'EN | हि':'हि | EN';
+}
+</script>
+<script src="engine.js"></script>
+<script>
+// Call updateLangToggle after engine loads
+window.addEventListener('DOMContentLoaded',()=>{updateLangToggle();},true);
+</script>
+</body>
+</html>
