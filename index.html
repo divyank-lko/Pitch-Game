@@ -15,11 +15,13 @@ const DB=SUPABASE_URL!=='YOUR_URL';
 async function dbQ(table,method,body,params){
   try{
     const u=`${SUPABASE_URL}/rest/v1/${table}${params?'?'+params:''}`;
-    const h={'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
+    const h={'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Accept':'application/json'};
     if(method!=='GET')h['Prefer']='return=minimal';
+    if(method==='GET')h['Accept']='application/json';
     const r=await fetch(u,{method,headers:h,body:body?JSON.stringify(body):undefined});
-    if(method==='GET')return await r.json();
-    return r.ok;
+    if(!r.ok){const err=await r.text();console.log('DB err:',r.status,err);return method==='GET'?[]:false;}
+    if(method==='GET'){const txt=await r.text();return txt?JSON.parse(txt):[];}
+    return true;
   }catch(e){console.log('DB:',e);return method==='GET'?[]:false;}
 }
 const dbInsert=(t,b)=>dbQ(t,'POST',b);
@@ -109,6 +111,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--fb);min-height:100dv
 
 /* ═══════════ STREAK CARD ═══════════ */
 .streak-card{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;transition:background .4s,border-color .4s}
+.streak-card .sc-pct{font-family:var(--fd);font-size:32px;color:#fff !important}
+.streak-card .sc-pct-lbl{font-family:var(--fm);font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.7) !important;text-transform:uppercase}
+body.day .streak-card .sc-pct{color:#fff !important}
+body.day .streak-card .sc-pct-lbl{color:rgba(255,255,255,0.7) !important}
 .sc-left .sc-num{font-family:var(--fd);font-size:60px;line-height:1;color:var(--t1)}
 .sc-badge{display:inline-flex;align-items:center;gap:5px;background:var(--goldBg);border:1px solid rgba(200,153,47,.25);border-radius:20px;padding:3px 10px;margin-top:6px}
 .sc-badge .ico{font-size:13px}
@@ -444,9 +450,9 @@ body{background:var(--bg);color:var(--t1);font-family:var(--fb);min-height:100dv
       <div class="tut-step">
         <div class="tut-card">
           <div class="tut-icon">🏏</div>
-          <div class="tut-num">STEP 1 OF 3</div>
-          <div class="tut-title">GUESS THE CRICKETER</div>
-          <div class="tut-desc">Every day, everyone gets the same mystery cricketer. You get clues — one at a time.</div>
+          <div class="tut-num" id="tut1num">STEP 1 OF 3</div>
+          <div class="tut-title" id="tut1title">GUESS THE CRICKETER</div>
+          <div class="tut-desc" id="tut1desc">Every day, everyone gets the same mystery cricketer. You get clues — one at a time.</div>
           <div class="tut-demo">
             <div class="tut-demo-lbl">CLUE 1 · ROLE</div>
             <div class="tut-demo-val">Left-arm fast · All-rounder · Pakistan</div>
@@ -457,9 +463,9 @@ body{background:var(--bg);color:var(--t1);font-family:var(--fb);min-height:100dv
       <div class="tut-step">
         <div class="tut-card">
           <div class="tut-icon">✍️</div>
-          <div class="tut-num">STEP 2 OF 3</div>
-          <div class="tut-title">TYPE YOUR ANSWER</div>
-          <div class="tut-desc">Type the cricketer's name. Spelling errors are OK — we match close guesses automatically.</div>
+          <div class="tut-num" id="tut2num">STEP 2 OF 3</div>
+          <div class="tut-title" id="tut2title">TYPE YOUR ANSWER</div>
+          <div class="tut-desc" id="tut2desc">Type the cricketer's name. Spelling errors are OK — we match close guesses automatically.</div>
           <div class="tut-demo">
             <div class="tut-demo-input"><span style="color:var(--t1)">Wasim Akram</span><span>✓</span></div>
             <div style="font-family:var(--fm);font-size:9px;color:var(--green);margin-top:6px;letter-spacing:1px">✅ "wasim" also works · "akram" also works</div>
@@ -470,9 +476,9 @@ body{background:var(--bg);color:var(--t1);font-family:var(--fb);min-height:100dv
       <div class="tut-step">
         <div class="tut-card">
           <div class="tut-icon">🏆</div>
-          <div class="tut-num">STEP 3 OF 3</div>
-          <div class="tut-title">WIN & CHALLENGE</div>
-          <div class="tut-desc">Guess in fewer clues = more points. Build a streak. Challenge friends to beat your score!</div>
+          <div class="tut-num" id="tut3num">STEP 3 OF 3</div>
+          <div class="tut-title" id="tut3title">WIN & CHALLENGE</div>
+          <div class="tut-desc" id="tut3desc">Guess in fewer clues = more points. Build a streak. Challenge friends to beat your score!</div>
           <div class="tut-demo" style="display:flex;justify-content:space-around;text-align:center">
             <div><div style="font-family:var(--fd);font-size:28px;color:var(--t1)">5</div><div style="font-family:var(--fm);font-size:9px;color:var(--t3)">POINTS</div></div>
             <div><div style="font-family:var(--fd);font-size:28px;color:var(--t1)">🟩⬛⬛⬛⬛</div><div style="font-family:var(--fm);font-size:9px;color:var(--t3)">SHARE</div></div>
@@ -738,6 +744,9 @@ const STR={
     heroTag:'Guess the Cricketer from Clues',heroSub:'Daily · Free · Hindi & English',
     playBtn:'🏏 PLAY TODAY\'S PITCH',
     tutSkip:'Skip',tutNext:'Next →',tutDone:'LET\'S PLAY!',
+    tut1num:'STEP 1 OF 3',tut1title:'GUESS THE CRICKETER',tut1desc:'Every day, everyone gets the same mystery cricketer. You get clues — one at a time.',
+    tut2num:'STEP 2 OF 3',tut2title:'TYPE YOUR ANSWER',tut2desc:'Type the cricketer name. Spelling errors are OK — we match close guesses.',
+    tut3num:'STEP 3 OF 3',tut3title:'WIN & CHALLENGE',tut3desc:'Guess in fewer clues = more points. Build a streak. Challenge friends to beat your score!',
     msgs:['🏆 First clue! Absolute legend!','⭐ Second clue — sharp as Warne\'s googly!','👏 Third clue — solid game!','😅 Fourth clue — barely made it!','😤 Last chance — phew!'],
     mil:['NEWCOMER','ROOKIE','PLAYER','GREAT','SUPER','AWESOME','ELITE','PRO','CHAMPION','LEGEND','GOD OF CRICKET','IMMORTAL'],
     waitStatusOrg:'Share code — start when ready',waitStatusPly:'Waiting for organizer to start…',
@@ -772,6 +781,9 @@ const STR={
     heroTag:'सुरागों से क्रिकेटर पहचानो',heroSub:'रोज़ · मुफ़्त · हिंदी और अंग्रेज़ी',
     playBtn:'🏏 आज का पिच खेलो',
     tutSkip:'छोड़ें',tutNext:'आगे →',tutDone:'खेलते हैं!',
+    tut1num:'चरण 1 / 3',tut1title:'क्रिकेटर को पहचानो',tut1desc:'हर दिन सभी को एक ही रहस्यमय क्रिकेटर मिलता है। एक-एक करके सुराग मिलते हैं।',
+    tut2num:'चरण 2 / 3',tut2title:'जवाब लिखो',tut2desc:'क्रिकेटर का नाम लिखो। स्पेलिंग गलत हो तो भी चलेगा — हम नज़दीकी जवाब भी पहचान लेते हैं।',
+    tut3num:'चरण 3 / 3',tut3title:'जीतो और चुनौती दो',tut3desc:'कम सुरागों में जवाब = ज़्यादा अंक। स्ट्रीक बनाओ। दोस्तों को हराने की चुनौती दो!',
     msgs:['🏆 पहले सुराग में! असली क्रिकेट गुरु!','⭐ दूसरे सुराग में!','👏 तीसरे सुराग में!','😅 चौथे सुराग में!','😤 आखिरी मौके पर!'],
     mil:['नया खिलाड़ी','शुरुआती','खिलाड़ी','महान','सुपर','ज़बरदस्त','एलीट','प्रो','चैम्पियन','लीजेंड','क्रिकेट के भगवान','अमर'],
     waitStatusOrg:'कोड शेयर करो — जब तैयार हो तब शुरू करो',waitStatusPly:'आयोजक के शुरू करने का इंतज़ार है…',
@@ -808,6 +820,8 @@ function applyStr(){
   if(E('homeBtn'))E('homeBtn').textContent=s('homeBtn');
   T('nextPuzzleLbl','nextPuzzle');
   if(E('exitBtn'))E('exitBtn').textContent='✕ '+(LANG==='hi'?'गेम छोड़ें':'EXIT GAME');
+  // Tutorial strings
+  ['tut1num','tut1title','tut1desc','tut2num','tut2title','tut2desc','tut3num','tut3title','tut3desc'].forEach(id=>T(id,id));
   if(E('midShare'))E('midShare').textContent=s('midShare');
   if(E('pracNoteR'))E('pracNoteR').textContent=s('pracResult');
   if(E('pracTag'))E('pracTag').textContent=s('pracTag');
@@ -879,8 +893,8 @@ const DAILY=[
   {name:'Wasim Akram',flag:'🇵🇰',country:'Pakistan',role:'Bowler',clues:{en:[{type:'CLUE 1',label:'Role',value:'Left-arm fast · All-rounder · Pakistan',mono:false},{type:'CLUE 2',label:'Wickets',value:'916 international wickets combined',mono:true},{type:'CLUE 3',label:'Era',value:'Pakistan · 1985–2003',mono:true},{type:'CLUE 4',label:'Legacy',value:'Greatest left-arm fast bowler in history',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'बाएं हाथ तेज़ · पाकिस्तान',mono:false},{type:'सुराग 2',label:'विकेट',value:'916 अंतरराष्ट्रीय विकेट',mono:true},{type:'सुराग 3',label:'दौर',value:'पाकिस्तान · 1985–2003',mono:true},{type:'सुराग 4',label:'विरासत',value:'इतिहास के सर्वश्रेष्ठ बाएं हाथ तेज़ गेंदबाज़',mono:true}]},stats:{matches:'104 Tests · 356 ODIs',runs:'2,898',avg:'23.62 bowling',era:'1985–2003'},fact:{en:'In 1992 WC final, Akram bowled Lamb and Lewis with back-to-back reverse-swinging yorkers.',hi:'1992 फाइनल में अकरम ने दो यॉर्कर पर लैम्ब और लुईस को आउट किया।'}},
   {name:'Don Bradman',flag:'🇦🇺',country:'Australia',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand bat · Middle order · Australia',mono:false},{type:'CLUE 2',label:'Average',value:'Test batting average: 99.94',mono:true},{type:'CLUE 3',label:'Era',value:'Australia · 1928–1948',mono:true},{type:'CLUE 4',label:'Legacy',value:'Greatest statistical achievement in any sport',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ का बल्लेबाज़ · ऑस्ट्रेलिया',mono:false},{type:'सुराग 2',label:'औसत',value:'टेस्ट बल्लेबाज़ी औसत: 99.94',mono:true},{type:'सुराग 3',label:'दौर',value:'ऑस्ट्रेलिया · 1928–1948',mono:true},{type:'सुराग 4',label:'विरासत',value:'किसी भी खेल की सबसे महान उपलब्धि',mono:true}]},stats:{matches:'52 Tests',runs:'6,996',avg:'99.94',era:'1928–1948'},fact:{en:'Bradman needed 4 runs in his last innings to average 100. He was bowled for 0 — finished at 99.94.',hi:'ब्रैडमैन को 4 रन चाहिए थे। 0 पर बोल्ड हुए — 99.94 पर रहे।'}},
   {name:'Brian Lara',flag:'🇹🇹',country:'West Indies',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Left-hand bat · West Indies · Trinidad',mono:false},{type:'CLUE 2',label:'Records',value:'501* First Class · 400* in Tests',mono:true},{type:'CLUE 3',label:'Era',value:'West Indies · 1990–2007',mono:true},{type:'CLUE 4',label:'Record',value:'Highest individual Test innings: 400*',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'बाएं हाथ का बल्लेबाज़ · वेस्टइंडीज',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'501* FC · 400* टेस्ट',mono:true},{type:'सुराग 3',label:'दौर',value:'वेस्टइंडीज · 1990–2007',mono:true},{type:'सुराग 4',label:'रिकॉर्ड',value:'सर्वोच्च टेस्ट पारी: 400*',mono:true}]},stats:{matches:'131 Tests',runs:'11,953',avg:'52.88',era:'1990–2007'},fact:{en:'Lara scored 501* for Warwickshire in 1994 — the highest score in all cricket history.',hi:'लारा ने 1994 में 501* बनाए — सर्वोच्च।'}},
-  {name:'Shane Warne',flag:'🇦🇺',country:'Australia',role:'Bowler',clues:{en:[{type:'CLUE 1',label:'Role',value:'Leg-spin bowler · Australia',mono:false},{type:'CLUE 2',label:'Wickets',value:'708 Test wickets',mono:true},{type:'CLUE 3',label:'Era',value:'Australia · 1992–2007',mono:true},{type:'CLUE 4',label:'Delivery',value:'Ball of the Century to Gatting — Ashes 1993',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'लेग-स्पिन गेंदबाज़ · ऑस्ट्रेलिया',mono:false},{type:'सुराग 2',label:'विकेट',value:'708 टेस्ट विकेट',mono:true},{type:'सुराग 3',label:'दौर',value:'ऑस्ट्रेलिया · 1992–2007',mono:true},{type:'सुराग 4',label:'गेंद',value:'1993 एशेज़ में गैटिंग को सदी की गेंद',mono:true}]},stats:{matches:'145 Tests',runs:'3,154',avg:'25.41 bowling',era:'1992–2007'},fact:{en:'Warne\'s Ball of the Century was his very first delivery in an Ashes Test.',hi:'वार्न की सदी की गेंद एशेज़ में उनकी पहली ही गेंद थी।'}},
-  {name:'Kapil Dev',flag:'🇮🇳',country:'India',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-arm fast · All-rounder · Haryana',mono:false},{type:'CLUE 2',label:'Wickets',value:'434 Test wickets — world record at retirement',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1978–1994',mono:true},{type:'CLUE 4',label:'Trophy',value:'Led India to 1983 World Cup victory at Lord\'s',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ तेज़ · ऑलराउंडर · हरियाणा',mono:false},{type:'सुराग 2',label:'विकेट',value:'434 टेस्ट विकेट — रिटायरमेंट पर विश्व रिकॉर्ड',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1978–1994',mono:true},{type:'सुराग 4',label:'ट्रॉफी',value:'1983 विश्व कप — भारत को जीत दिलाई',mono:true}]},stats:{matches:'131 Tests',runs:'5,248',avg:'31.05 bat',era:'1978–1994'},fact:{en:'Kapil Dev\'s 175* vs Zimbabwe in 1983 was never broadcast — the BBC crew had gone for lunch.',hi:'1983 में कपिल की 175* कभी प्रसारित नहीं हुई।'}},
+  {name:'Shane Warne',flag:'🇦🇺',country:'Australia',role:'Bowler',clues:{en:[{type:'CLUE 1',label:'Role',value:'Leg-spin bowler · Australia',mono:false},{type:'CLUE 2',label:'Wickets',value:'708 Test wickets',mono:true},{type:'CLUE 3',label:'Era',value:'Australia · 1992–2007',mono:true},{type:'CLUE 4',label:'Delivery',value:'Ball of the Century to Gatting — Ashes 1993',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'लेग-स्पिन गेंदबाज़ · ऑस्ट्रेलिया',mono:false},{type:'सुराग 2',label:'विकेट',value:'708 टेस्ट विकेट',mono:true},{type:'सुराग 3',label:'दौर',value:'ऑस्ट्रेलिया · 1992–2007',mono:true},{type:'सुराग 4',label:'गेंद',value:'1993 एशेज़ में गैटिंग को सदी की गेंद',mono:true}]},stats:{matches:'145 Tests',runs:'3,154',avg:'25.41 bowling',era:'1992–2007'},fact:{en:'Warnes Ball of the Century was his very first delivery in an Ashes Test.',hi:'वार्न की सदी की गेंद एशेज़ में उनकी पहली ही गेंद थी।'}},
+  {name:'Kapil Dev',flag:'🇮🇳',country:'India',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-arm fast · All-rounder · Haryana',mono:false},{type:'CLUE 2',label:'Wickets',value:'434 Test wickets — world record at retirement',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1978–1994',mono:true},{type:'CLUE 4',label:'Trophy',value:'Led India to 1983 World Cup victory at Lords',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ तेज़ · ऑलराउंडर · हरियाणा',mono:false},{type:'सुराग 2',label:'विकेट',value:'434 टेस्ट विकेट — रिटायरमेंट पर विश्व रिकॉर्ड',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1978–1994',mono:true},{type:'सुराग 4',label:'ट्रॉफी',value:'1983 विश्व कप — भारत को जीत दिलाई',mono:true}]},stats:{matches:'131 Tests',runs:'5,248',avg:'31.05 bat',era:'1978–1994'},fact:{en:'Kapil Dev\'s 175* vs Zimbabwe in 1983 was never broadcast — the BBC crew had gone for lunch.',hi:'1983 में कपिल की 175* कभी प्रसारित नहीं हुई।'}},
   {name:'Rahul Dravid',flag:'🇮🇳',country:'India',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Middle-order batter · Right-hand · The Wall',mono:false},{type:'CLUE 2',label:'Stat',value:'29,942 balls faced in Tests — most ever',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1996–2012',mono:true},{type:'CLUE 4',label:'Record',value:'Most catches by non-keeper in Tests: 210',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'मध्यक्रम बल्लेबाज़ · दीवार',mono:false},{type:'सुराग 2',label:'आँकड़ा',value:'29,942 गेंदों का सामना — सर्वाधिक',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1996–2012',mono:true},{type:'सुराग 4',label:'रिकॉर्ड',value:'गैर-विकेटकीपर द्वारा सर्वाधिक कैच: 210',mono:true}]},stats:{matches:'164 Tests',runs:'13,288',avg:'52.31',era:'1996–2012'},fact:{en:'Dravid is the only player to score Test centuries in all 10 Test-playing nations.',hi:'द्रविड़ इकलौते खिलाड़ी हैं जिन्होंने सभी 10 टेस्ट देशों में शतक बनाए।'}},
   {name:'Muttiah Muralitharan',flag:'🇱🇰',country:'Sri Lanka',role:'Bowler',clues:{en:[{type:'CLUE 1',label:'Role',value:'Off-spin bowler · Sri Lanka',mono:false},{type:'CLUE 2',label:'Record',value:'800 Test wickets — world record',mono:true},{type:'CLUE 3',label:'Era',value:'Sri Lanka · 1992–2010',mono:true},{type:'CLUE 4',label:'Farewell',value:'Took 800th wicket on the final ball of last Test',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'ऑफ-स्पिन गेंदबाज़ · श्रीलंका',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'800 टेस्ट विकेट — विश्व रिकॉर्ड',mono:true},{type:'सुराग 3',label:'दौर',value:'श्रीलंका · 1992–2010',mono:true},{type:'सुराग 4',label:'विदाई',value:'अंतिम टेस्ट की आखिरी गेंद पर 800वां विकेट',mono:true}]},stats:{matches:'133 Tests',runs:'1,261',avg:'22.72 bowling',era:'1992–2010'},fact:{en:'Murali took his 800th wicket on the final ball of his final Test — a fairy-tale ending.',hi:'मुरली ने आखिरी टेस्ट की आखिरी गेंद पर 800वां विकेट लिया।'}},
 ];
@@ -894,7 +908,22 @@ const PRACTICE=[
   {name:'Chris Gayle',flag:'🇯🇲',country:'West Indies',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Left-hand opening bat · T20 legend · Jamaica',mono:false},{type:'CLUE 2',label:'Record',value:'175* off 66 balls — highest T20 score ever',mono:true},{type:'CLUE 3',label:'Era',value:'West Indies · 1999–2021',mono:true},{type:'CLUE 4',label:'Nickname',value:'Universe Boss',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'बाएं हाथ ओपनर · T20 लीजेंड',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'175* 66 गेंदों में — T20 का सर्वोच्च',mono:true},{type:'सुराग 3',label:'दौर',value:'वेस्टइंडीज · 1999–2021',mono:true},{type:'सुराग 4',label:'उपनाम',value:'Universe Boss',mono:true}]},stats:{matches:'103 Tests',runs:'7,214',avg:'42.18',era:'1999–2021'},fact:{en:'Gayle\'s 175* off 66 balls in IPL 2013 remains the highest T20 innings ever.',hi:'2013 IPL में गायल के 175* अभी भी T20 का सर्वोच्च हैं।'}},
   {name:'Ricky Ponting',flag:'🇦🇺',country:'Australia',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand bat · Australia captain',mono:false},{type:'CLUE 2',label:'Centuries',value:'41 Test centuries — 2nd all-time',mono:true},{type:'CLUE 3',label:'Era',value:'Australia · 1995–2012',mono:true},{type:'CLUE 4',label:'Trophies',value:'Won 3 World Cups: 1999, 2003, 2007',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ बल्लेबाज़ · ऑस्ट्रेलिया कप्तान',mono:false},{type:'सुराग 2',label:'शतक',value:'41 टेस्ट शतक — दूसरे सर्वाधिक',mono:true},{type:'सुराग 3',label:'दौर',value:'ऑस्ट्रेलिया · 1995–2012',mono:true},{type:'सुराग 4',label:'ट्रॉफी',value:'3 विश्व कप: 1999, 2003, 2007',mono:true}]},stats:{matches:'168 Tests',runs:'13,378',avg:'51.85',era:'1995–2012'},fact:{en:'Ponting is the only captain to win two consecutive World Cups (2003 and 2007).',hi:'पोंटिंग एकमात्र कप्तान हैं जिन्होंने लगातार दो विश्व कप जीते।'}},
   {name:'Dale Steyn',flag:'🇿🇦',country:'South Africa',role:'Bowler',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-arm fast bowler · South Africa',mono:false},{type:'CLUE 2',label:'Ranking',value:'Held ICC #1 Test bowling rank for 263 weeks',mono:true},{type:'CLUE 3',label:'Era',value:'South Africa · 2004–2019',mono:true},{type:'CLUE 4',label:'Stats',value:'439 Test wickets at 22.95 average',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ तेज़ गेंदबाज़ · दक्षिण अफ्रीका',mono:false},{type:'सुराग 2',label:'रैंकिंग',value:'ICC #1 टेस्ट रैंकिंग 263 सप्ताह',mono:true},{type:'सुराग 3',label:'दौर',value:'दक्षिण अफ्रीका · 2004–2019',mono:true},{type:'सुराग 4',label:'आँकड़े',value:'439 टेस्ट विकेट · 22.95 औसत',mono:true}]},stats:{matches:'93 Tests',runs:'1,359',avg:'22.95 bowling',era:'2004–2019'},fact:{en:'Steyn held the ICC #1 Test bowling ranking for 263 weeks — nearly 5 years.',hi:'स्टेन ने 263 सप्ताह ICC #1 रैंकिंग बनाए रखी।'}},
-  {name:'Ian Botham',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',country:'England',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand bat · Right-arm fast-medium · England',mono:false},{type:'CLUE 2',label:'Innings',value:'149* at Headingley 1981 — England had followed on',mono:true},{type:'CLUE 3',label:'Era',value:'England · 1977–1992',mono:true},{type:'CLUE 4',label:'Series',value:'1981 Ashes — known as \'Botham\'s Ashes\'',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ बल्लेबाज़ · इंग्लैंड',mono:false},{type:'सुराग 2',label:'पारी',value:'1981 हेडिंग्ले में 149* — फॉलो-ऑन के बाद',mono:true},{type:'सुराग 3',label:'दौर',value:'इंग्लैंड · 1977–1992',mono:true},{type:'सुराग 4',label:'सीरीज़',value:'1981 एशेज़ — बॉथम की एशेज़',mono:true}]},stats:{matches:'102 Tests',runs:'5,200',avg:'28.40 bowling',era:'1977–1992'},fact:{en:'When Botham came to bat at Headingley 1981, England were 500-1. They won.',hi:'1981 हेडिंग्ले में इंग्लैंड 500-1 पर था। फिर भी जीता।'}},
+  {name:'Ian Botham',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',country:'England',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand bat · Right-arm fast-medium · England',mono:false},{type:'CLUE 2',label:'Innings',value:'149* at Headingley 1981 — England had followed on',mono:true},{type:'CLUE 3',label:'Era',value:'England · 1977–1992',mono:true},{type:'CLUE 4',label:'Series',value:'1981 Ashes — known as Botham Ashes',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ बल्लेबाज़ · इंग्लैंड',mono:false},{type:'सुराग 2',label:'पारी',value:'1981 हेडिंग्ले में 149* — फॉलो-ऑन के बाद',mono:true},{type:'सुराग 3',label:'दौर',value:'इंग्लैंड · 1977–1992',mono:true},{type:'सुराग 4',label:'सीरीज़',value:'1981 एशेज़ — बॉथम की एशेज़',mono:true}]},stats:{matches:'102 Tests',runs:'5,200',avg:'28.40 bowling',era:'1977–1992'},fact:{en:'When Botham came to bat at Headingley 1981, England were 500-1. They won.',hi:'1981 हेडिंग्ले में इंग्लैंड 500-1 पर था। फिर भी जीता।'}},
+];
+
+
+// ═══ TOURNAMENT PUZZLES — separate from DAILY and PRACTICE ═══
+const TOURNAMENT=[
+  {name:'Sunil Gavaskar',flag:'🇮🇳',country:'India',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand opening bat · Mumbai · Tests',mono:false},{type:'CLUE 2',label:'Record',value:'First to score 10,000 Test runs',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1971–1987',mono:true},{type:'CLUE 4',label:'Feat',value:'29 Test centuries · The Little Master',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ ओपनर · मुंबई',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'टेस्ट में 10,000 रन बनाने वाले पहले',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1971–1987',mono:true},{type:'सुराग 4',label:'उपलब्धि',value:'29 टेस्ट शतक · लिटिल मास्टर',mono:true}]},stats:{matches:'125 Tests',runs:'10,122',avg:'51.12',era:'1971–1987'},fact:{en:'Gavaskar wore a thigh pad inside his shirt to simulate a chest guard against the West Indian pace attack.',hi:'गावसकर पेस गेंदबाज़ों से बचने के लिए शर्ट के अंदर थाई पैड पहनते थे।'}},
+  {name:'Sourav Ganguly',flag:'🇮🇳',country:'India',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Left-hand bat · Aggressive captain · Bengal',mono:false},{type:'CLUE 2',label:'Trophy',value:'Led India to 2003 WC final · NatWest 2002',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1992–2008',mono:true},{type:'CLUE 4',label:'Record',value:'11,363 international runs · Lords shirt-wave',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'बाएं हाथ बल्लेबाज़ · आक्रामक कप्तान · बंगाल',mono:false},{type:'सुराग 2',label:'ट्रॉफी',value:'2003 WC फाइनल · NatWest 2002',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1992–2008',mono:true},{type:'सुराग 4',label:'रिकॉर्ड',value:'11,363 अंतरराष्ट्रीय रन · लॉर्ड्स में शर्ट लहराई',mono:true}]},stats:{matches:'113 Tests · 311 ODIs',runs:'7,212 Test',avg:'42.17',era:'1992–2008'},fact:{en:"Ganguly removed his shirt at Lords balcony after India won NatWest 2002 — one of cricket iconic moments.",hi:'गांगुली ने 2002 NatWest जीतने के बाद लॉर्ड्स की बालकनी पर शर्ट उतारी — क्रिकेट का यादगार पल।'}},
+  {name:'Anil Kumble',flag:'🇮🇳',country:'India',role:'Bowler',clues:{en:[{type:'CLUE 1',label:'Role',value:'Leg-spin bowler · India · Karnataka',mono:false},{type:'CLUE 2',label:'Record',value:'619 Test wickets — 3rd all-time',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1990–2008',mono:true},{type:'CLUE 4',label:'Feat',value:'10 wickets in an innings vs Pakistan 1999',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'लेग-स्पिन गेंदबाज़ · भारत · कर्नाटक',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'619 टेस्ट विकेट — तीसरे सर्वाधिक',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1990–2008',mono:true},{type:'सुराग 4',label:'उपलब्धि',value:'1999 में पाकिस्तान के खिलाफ एक पारी में 10 विकेट',mono:true}]},stats:{matches:'132 Tests',runs:'2,506',avg:'29.65 bowling',era:'1990–2008'},fact:{en:"Kumble took all 10 Pakistan wickets in one innings in 1999 — only the 2nd bowler in Test history to do so.",hi:'कुंबले ने 1999 में एक पारी में पाकिस्तान के सभी 10 विकेट लिए — टेस्ट इतिहास में दूसरे गेंदबाज़।'}},
+  {name:'Virender Sehwag',flag:'🇮🇳',country:'India',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand opening bat · Aggressive · Delhi',mono:false},{type:'CLUE 2',label:'Records',value:'Triple centuries: 309 and 319 in Tests',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1999–2013',mono:true},{type:'CLUE 4',label:'Style',value:'Fastest to 300 in Tests: 278 balls',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ ओपनर · आक्रामक · दिल्ली',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'दो तिहरे शतक: 309 और 319',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1999–2013',mono:true},{type:'सुराग 4',label:'शैली',value:'टेस्ट में सबसे तेज़ 300: 278 गेंद',mono:true}]},stats:{matches:'104 Tests · 251 ODIs',runs:'8,586 Test',avg:'49.34',era:'1999–2013'},fact:{en:'Sehwag is the only Indian to score two triple centuries in Tests. He never believed in leaving the ball.',hi:'सेहवाग भारत के एकमात्र खिलाड़ी हैं जिन्होंने टेस्ट में दो तिहरे शतक बनाए।'}},
+  {name:'VVS Laxman',flag:'🇮🇳',country:'India',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Middle-order batter · Very Very Special',mono:false},{type:'CLUE 2',label:'Innings',value:'281 at Eden Gardens vs Australia 2001',mono:true},{type:'CLUE 3',label:'Era',value:'India · 1996–2012',mono:true},{type:'CLUE 4',label:'Partner',value:'281 with Dravid — saved India from follow-on',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'मध्यक्रम बल्लेबाज़ · Very Very Special',mono:false},{type:'सुराग 2',label:'पारी',value:'2001 में ऑस्ट्रेलिया के खिलाफ 281',mono:true},{type:'सुराग 3',label:'दौर',value:'भारत · 1996–2012',mono:true},{type:'सुराग 4',label:'साझेदारी',value:'द्रविड़ के साथ 281 — फॉलो-ऑन से बचाया',mono:true}]},stats:{matches:'134 Tests',runs:'8,781',avg:'45.97',era:'1996–2012'},fact:{en:"Laxmans 281 at Eden Gardens 2001 — greatest Test innings. India won from follow-on.",hi:'2001 में लक्ष्मण की 281 रन की पारी टेस्ट इतिहास की महानतम पारियों में से एक मानी जाती है।'}},
+  {name:'Yuvraj Singh',flag:'🇮🇳',country:'India',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Left-hand bat · Left-arm spin · Punjab',mono:false},{type:'CLUE 2',label:'Feat',value:'6 sixes in an over off Stuart Broad — T20 WC 2007',mono:true},{type:'CLUE 3',label:'Trophy',value:'2011 WC Player of the Tournament — beat cancer',mono:true},{type:'CLUE 4',label:'Era',value:'India · 2000–2017',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'बाएं हाथ बल्लेबाज़ · पंजाब',mono:false},{type:'सुराग 2',label:'उपलब्धि',value:'स्टुअर्ट ब्रॉड के एक ओवर में 6 छक्के — 2007',mono:true},{type:'सुराग 3',label:'ट्रॉफी',value:'2011 WC Player of the Tournament — कैंसर से जीते',mono:true},{type:'सुराग 4',label:'दौर',value:'भारत · 2000–2017',mono:true}]},stats:{matches:'40 Tests · 304 ODIs',runs:'1,900 Test',avg:'33.92',era:'2000–2017'},fact:{en:'Yuvraj hit 6 sixes off Stuart Broad in T20 WC 2007 and won the 2011 WC despite being diagnosed with cancer during the tournament.',hi:'युवराज ने 2007 में 6 छक्के लगाए और 2011 विश्व कप में कैंसर से पीड़ित रहते हुए प्लेयर ऑफ टूर्नामेंट बने।'}},
+  {name:'Adam Gilchrist',flag:'🇦🇺',country:'Australia',role:'Wicket-keeper Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Wicket-keeper · Left-hand bat · Australia',mono:false},{type:'CLUE 2',label:'Average',value:'Test batting average: 47.60 as keeper-bat',mono:true},{type:'CLUE 3',label:'Era',value:'Australia · 1999–2008',mono:true},{type:'CLUE 4',label:'WC Final',value:'149 off 104 balls in 2007 WC Final vs Sri Lanka',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'विकेटकीपर · बाएं हाथ बल्लेबाज़ · ऑस्ट्रेलिया',mono:false},{type:'सुराग 2',label:'औसत',value:'टेस्ट बल्लेबाज़ी औसत: 47.60',mono:true},{type:'सुराग 3',label:'दौर',value:'ऑस्ट्रेलिया · 1999–2008',mono:true},{type:'सुराग 4',label:'WC फाइनल',value:'2007 WC फाइनल में 149 रन 104 गेंदों में',mono:true}]},stats:{matches:'96 Tests · 287 ODIs',runs:'5,570 Test',avg:'47.60',era:'1999–2008'},fact:{en:"Gilchrist walked when out even without an umpires decision — rare sportsmanship at highest level.",hi:'गिलक्रिस्ट बिना अंपायर के फैसले के भी आउट होने पर खुद चले जाते थे।'}},
+  {name:'Imran Khan',flag:'🇵🇰',country:'Pakistan',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-arm fast · Aggressive batter · Pakistan',mono:false},{type:'CLUE 2',label:'Trophy',value:'Led Pakistan to 1992 World Cup victory',mono:true},{type:'CLUE 3',label:'Era',value:'Pakistan · 1971–1992',mono:true},{type:'CLUE 4',label:'Stats',value:'362 Test wickets + 3,807 Test runs',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ तेज़ · पाकिस्तान कप्तान',mono:false},{type:'सुराग 2',label:'ट्रॉफी',value:'पाकिस्तान को 1992 विश्व कप जीत दिलाई',mono:true},{type:'सुराग 3',label:'दौर',value:'पाकिस्तान · 1971–1992',mono:true},{type:'सुराग 4',label:'आँकड़े',value:'362 टेस्ट विकेट + 3,807 टेस्ट रन',mono:true}]},stats:{matches:'88 Tests',runs:'3,807',avg:'37.69',era:'1971–1992'},fact:{en:"Imran Khan 1992 WC speech — cornered tiger — became one of cricket most famous quotes.",hi:"इमरान खान का 1992 WC स्पीच — कोने में फंसा बाघ — क्रिकेट के मशहूर उद्धरणों में से एक।"}},
+  {name:'Sanath Jayasuriya',flag:'🇱🇰',country:'Sri Lanka',role:'Batter',clues:{en:[{type:'CLUE 1',label:'Role',value:'Left-hand opening bat · Left-arm spin · Sri Lanka',mono:false},{type:'CLUE 2',label:'Style',value:'Revolutionized ODI opening — 1996 WC pinch-hitting',mono:true},{type:'CLUE 3',label:'Era',value:'Sri Lanka · 1989–2011',mono:true},{type:'CLUE 4',label:'Record',value:'13,430 ODI runs · 440 ODI wickets',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'बाएं हाथ ओपनर · बाएं हाथ स्पिन · श्रीलंका',mono:false},{type:'सुराग 2',label:'शैली',value:'ODI ओपनिंग की क्रांति — 1996 WC पिंच-हिटिंग',mono:true},{type:'सुराग 3',label:'दौर',value:'श्रीलंका · 1989–2011',mono:true},{type:'सुराग 4',label:'रिकॉर्ड',value:'13,430 ODI रन · 440 ODI विकेट',mono:true}]},stats:{matches:'110 Tests · 445 ODIs',runs:'6,973 Test',avg:'40.07',era:'1989–2011'},fact:{en:'Jayasuriya changed cricket in the 1996 World Cup by attacking in the first 15 overs — Sri Lanka went on to win the tournament.',hi:'जयसूर्या ने 1996 WC में पहले 15 ओवरों में हमला करके क्रिकेट बदल दिया — श्रीलंका ने टूर्नामेंट जीता।'}},
+  {name:'Shahid Afridi',flag:'🇵🇰',country:'Pakistan',role:'All-rounder',clues:{en:[{type:'CLUE 1',label:'Role',value:'Right-hand bat · Leg-spin bowler · Boom Boom',mono:false},{type:'CLUE 2',label:'Record',value:'Fastest ODI century: 37 balls (1996) — stood for 17 yrs',mono:true},{type:'CLUE 3',label:'Era',value:'Pakistan · 1996–2018',mono:true},{type:'CLUE 4',label:'Nickname',value:'Lala — 395 ODI wickets',mono:true}],hi:[{type:'सुराग 1',label:'भूमिका',value:'दाएं हाथ बल्लेबाज़ · लेग-स्पिन · बूम बूम',mono:false},{type:'सुराग 2',label:'रिकॉर्ड',value:'सबसे तेज़ ODI शतक: 37 गेंद (1996) — 17 साल रहा',mono:true},{type:'सुराग 3',label:'दौर',value:'पाकिस्तान · 1996–2018',mono:true},{type:'सुराग 4',label:'उपनाम',value:'लाला — 395 ODI विकेट',mono:true}]},stats:{matches:'27 Tests · 398 ODIs',runs:'1,716 Test',avg:'36.51',era:'1996–2018'},fact:{en:"Afridi scored the fastest ODI century (37 balls) using Tendulkars bat without permission.",hi:"अफरीदी ने सचिन का बल्ला बिना पूछे उठाकर 37 गेंदों में सबसे तेज़ ODI शतक बनाया।"}},
 ];
 
 function getDP(d){const seed=[...d].reduce((a,c)=>a+c.charCodeAt(0),0);return DAILY[seed%DAILY.length];}
@@ -931,7 +960,9 @@ function skipTutorial(){
 // GAME STATE
 // ══════════════════════════════
 let G={mode:'today',player:null,pi:0,shown:1,guesses:0,wrongs:[],over:false,won:false,secs:0,tiv:null,
-       tournRoom:null,tournTimer:0,tournTimerIv:null,tournIsOrg:false,pollIv:null};
+       tournRoom:null,tournTimer:0,tournTimerIv:null,tournIsOrg:false,pollIv:null,
+       // Tournament multi-round
+       tournRound:0,tournScore:0,tournRoundsPlayed:0,tournPuzzles:[]};
 let SELECTED_TIMER=60;
 
 // ══════════════════════════════
@@ -994,8 +1025,12 @@ function refreshStats(){
   if(E('statPlayed'))E('statPlayed').textContent=st.played;
   if(E('statWon'))E('statWon').textContent=st.won;
   if(E('statBest'))E('statBest').textContent=st.max;
-  // Fix colors for streak card
-  ['streakNum','statsStreakNum'].forEach(id=>{if(E(id))E(id).style.color=m.c;});
+  // Fix colors — streak card always has dark bg from milestone, so text is white
+  ['streakNum','statsStreakNum'].forEach(id=>{if(E(id)){E(id).style.color='#fff';}});
+  ['streakCap','statsStreakCap'].forEach(id=>{if(E(id))E(id).style.color='rgba(255,255,255,0.6)';});
+  // Win % always white on colored background
+  if(E('winPct'))E('winPct').style.color='#fff';
+  if(E('winPctLbl'))E('winPctLbl').style.color='rgba(255,255,255,0.7)';
 }
 
 function buildPracList(){
@@ -1049,7 +1084,16 @@ function startGame(mode='today',pi=0,tournRoom=null){
     openNick(()=>startGame(mode,pi,tournRoom));return;
   }
   G.mode=mode;G.pi=pi;G.tournRoom=tournRoom;
-  G.player=mode==='today'?TODAY_P:mode==='tournament'?TODAY_P:PRACTICE[pi%PRACTICE.length];
+  // Tournament uses its own puzzle set, shuffled per room code
+  if(mode==='tournament'&&tournRoom){
+    // Shuffle TOURNAMENT array using room code as seed
+    const seed=[...tournRoom.room_code].reduce((a,c)=>a+c.charCodeAt(0),0);
+    G.tournPuzzles=[...TOURNAMENT].sort(()=>Math.sin(seed*Math.random()*999)-.5);
+    G.tournRound=0;G.tournScore=0;G.tournRoundsPlayed=0;
+    G.player=G.tournPuzzles[0];
+  }else{
+    G.player=mode==='today'?TODAY_P:PRACTICE[pi%PRACTICE.length];
+  }
   G.shown=1;G.guesses=0;G.wrongs=[];G.over=false;G.won=false;
   markSeen();
   const E=id=>document.getElementById(id);
@@ -1111,19 +1155,65 @@ function submitGuess(){
   if(mn&&G.wrongs.includes(mn)){showToast(s('duped'));return;}
   inp.value='';G.guesses++;
   if(mn&&nr(mn)===nr(G.player.name)){
-    G.won=true;G.over=true;stopTimer();clearInterval(G.tournTimerIv);updDots();
-    setTimeout(()=>endGame(true,Math.max(1,6-G.guesses)),600);
+    G.won=true;updDots();
+    if(G.mode==='tournament'){
+      // Award points and move to next round
+      const pts=Math.max(1,6-G.guesses);
+      G.tournScore+=pts;G.tournRoundsPlayed++;
+      showToast(`✅ ${G.player.name} · +${pts}pts`);
+      setTimeout(()=>nextTournRound(),1200);
+    }else{
+      G.over=true;stopTimer();clearInterval(G.tournTimerIv);
+      setTimeout(()=>endGame(true,Math.max(1,6-G.guesses)),600);
+    }
   }else{
     const dn=mn||raw;if(mn)G.wrongs.push(mn);
     const el=document.createElement('div');el.className='wrong';el.textContent=dn;document.getElementById('wrongsList').appendChild(el);
-    updDots();doFlash();document.getElementById('midShare').classList.add('show');
-    if(G.guesses>=5){G.over=true;stopTimer();clearInterval(G.tournTimerIv);setTimeout(()=>endGame(false,0),600);}
-    else if(G.shown<4){G.shown++;setTimeout(()=>{renderClues();updateNextBtn();},400);}
+    updDots();doFlash();
+    if(G.mode!=='tournament')document.getElementById('midShare').classList.add('show');
+    if(G.guesses>=5){
+      if(G.mode==='tournament'){
+        G.tournRoundsPlayed++;
+        showToast(`❌ ${G.player.name}`);
+        setTimeout(()=>nextTournRound(),1200);
+      }else{
+        G.over=true;stopTimer();clearInterval(G.tournTimerIv);setTimeout(()=>endGame(false,0),600);
+      }
+    }else if(G.shown<4){G.shown++;setTimeout(()=>{renderClues();updateNextBtn();},400);}
   }
 }
 function doFlash(){const el=document.createElement('div');el.className='flash';document.body.appendChild(el);setTimeout(()=>el.remove(),500);}
 function doExit(){stopTimer();clearInterval(G.tournTimerIv);clearInterval(G.pollIv);goHome();}
 function shareMid(){const lang=LANG||'en';const ca=G.player.clues[lang]||G.player.clues.en;const c=ca[G.shown-1];window.open(`https://wa.me/?text=${encodeURIComponent(`🏏 PITCH #${PNUM}\nClue: "${c.value}"\nhttps://pitchcrickettrivia.in`)}`,'_blank');}
+
+// ══════════════════════════════
+// NEXT TOURNAMENT ROUND
+// ══════════════════════════════
+function nextTournRound(){
+  if(G.tournTimer<=0){
+    // Time up — end tournament
+    endGame(G.tournScore>0,G.tournScore);
+    return;
+  }
+  G.tournRound++;
+  if(G.tournRound>=G.tournPuzzles.length){
+    // No more puzzles
+    endGame(G.tournScore>0,G.tournScore);
+    return;
+  }
+  // Reset round state
+  G.player=G.tournPuzzles[G.tournRound];
+  G.shown=1;G.guesses=0;G.wrongs=[];G.over=false;G.won=false;
+  // Reset UI
+  document.getElementById('wrongsList').innerHTML='';
+  document.getElementById('guessInput').value='';
+  document.getElementById('midShare').classList.remove('show');
+  // Show round indicator
+  const gameNum=document.getElementById('gameNum');
+  if(gameNum)gameNum.textContent=`#${PNUM} · Q${G.tournRound+1}`;
+  buildDots();renderClues();updateNextBtn();
+  setTimeout(()=>document.getElementById('guessInput').focus(),200);
+}
 
 // ══════════════════════════════
 // END GAME
@@ -1141,8 +1231,12 @@ function endGame(won,score){
   if(!isPrac&&!isTourn)sTR(r);else if(isPrac)sPR(G.pi,r);
   // Tournament: submit result to Supabase
   if(isTourn&&G.tournRoom&&DB){
-    dbUpdate('tournament_players',{score:score||0,guesses:G.guesses,clues_used:G.shown,time_seconds:G.secs,finished:true,won},`room_code=eq.${G.tournRoom.room_code}&nickname=eq.${encodeURIComponent(gNick())}`);
-    setTimeout(()=>showTournResults(G.tournRoom.room_code),2000);
+    const finalScore=G.tournScore||0;
+    const finalWon=finalScore>0;
+    dbUpdate('tournament_players',{score:finalScore,guesses:G.tournRoundsPlayed,clues_used:G.tournRoundsPlayed,time_seconds:G.secs,finished:true,won:finalWon},`room_code=eq.${G.tournRoom.room_code}&nickname=eq.${encodeURIComponent(gNick())}`);
+    // Show score summary then results
+    showToast(`Tournament done! Your score: ${finalScore} pts`);
+    setTimeout(()=>showTournResults(G.tournRoom.room_code),3000);
     return;
   }
   setTimeout(()=>{loadResult(r);showScreen('resultScreen');if(won&&!isPrac)confetti();if(!isPrac&&!isTourn){document.getElementById('playBtn').style.display='none';document.getElementById('playedBox').style.display='block';}},300);
@@ -1240,7 +1334,7 @@ async function doJoinRoom(){
   // Check room exists
   let room=null;
   if(DB){
-    const rooms=await dbSelect('tournament_rooms',`room_code=eq.${code}`);
+    const rooms=await dbSelect('tournament_rooms',`room_code=eq.${encodeURIComponent(code)}`);
     if(!rooms||!rooms.length){showToast('Room not found');return;}
     room=rooms[0];
     if(room.status==='finished'){showToast('Tournament already finished');return;}
@@ -1266,7 +1360,7 @@ function showWaitingRoom(code,isOrg,room){
   G.pollIv=setInterval(async()=>{
     await updatePlayersList(code);
     if(!isOrg&&DB){
-      const rooms=await dbSelect('tournament_rooms',`room_code=eq.${code}`);
+      const rooms=await dbSelect('tournament_rooms',`room_code=eq.${encodeURIComponent(code)}`);
       if(rooms&&rooms.length&&rooms[0].status==='active'){
         clearInterval(G.pollIv);
         const r=rooms[0];
@@ -1293,7 +1387,7 @@ async function startTournament(){
   clearInterval(G.pollIv);
   if(DB){
     await dbUpdate('tournament_rooms',{status:'active',started_at:new Date().toISOString()},`room_code=eq.${code}`);
-    const rooms=await dbSelect('tournament_rooms',`room_code=eq.${code}`);
+    const rooms=await dbSelect('tournament_rooms',`room_code=eq.${encodeURIComponent(code)}`);
     const room=rooms&&rooms.length?rooms[0]:{room_code:code,timer_seconds:SELECTED_TIMER};
     startGame('tournament',0,room);
   }else{
